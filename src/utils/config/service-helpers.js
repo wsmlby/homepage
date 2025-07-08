@@ -358,6 +358,12 @@ export function cleanServiceGroups(groups) {
           fit,
           stream,
 
+          // npm
+          domain_suffixes,
+          show_hosts,
+          show_disabled,
+          fetch_info,
+
           // openmediavault
           method,
 
@@ -532,6 +538,12 @@ export function cleanServiceGroups(groups) {
         if (type === "mjpeg") {
           if (stream) widget.stream = stream;
           if (fit) widget.fit = fit;
+        }
+        if (type === "npm") {
+          if (domain_suffixes) widget.domain_suffixes = domain_suffixes;
+          if (show_hosts !== undefined) widget.show_hosts = JSON.parse(show_hosts);
+          if (show_disabled !== undefined) widget.show_disabled = JSON.parse(show_disabled);
+          if (fetch_info !== undefined) widget.fetch_info = JSON.parse(fetch_info);
         }
         if (type === "openmediavault") {
           if (method) widget.method = method;

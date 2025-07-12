@@ -58,6 +58,9 @@ export default function Component({ service }) {
             <div key={c.id} className={classNames(
                     "bg-theme-200/50 dark:bg-theme-900/20 rounded-sm m-1 flex-1 flex flex-col items-center justify-center text-center p-1")}>
               <a href={`https://${c.hosts[0].host}`} target="_blank" rel="noopener noreferrer">
+                {c.icon && (
+                  <img src={c.icon} alt={c.title || c.hosts[0].suffixed} className="w-6 h-6 rounded-full mb-2" />)
+                }
                 <p className="col-span-2 text-sm">{c.title || c.hosts[0].suffixed}</p>
               </a>
               {c.hosts.length > 1 && (

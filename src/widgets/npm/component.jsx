@@ -7,7 +7,9 @@ import useWidgetAPI from "utils/proxy/use-widget-api";
 export default function Component({ service }) {
   const { widget } = service;
 
-  const { data: infoData, error: infoError } = useWidgetAPI(widget, "hosts");
+  const { data: infoData, error: infoError } = useWidgetAPI(widget, "hosts", {
+    shouldRetryOnError: (error) => error?.status !== 404,
+  });
 
   if (infoError) {
     return <Container service={service} error={infoError} />;

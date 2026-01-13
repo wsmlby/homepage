@@ -101,6 +101,25 @@ Each service can have multiple widgets attached to it, for example:
 
       Multiple widgets per service are not yet supported with Kubernetes ingress annotations.
 
+#### Custom HTTP headers
+
+Widgets that make HTTP calls support extra request headers via `headers`. This is useful when a reverse proxy expects a secret header.
+
+```yaml
+- UptimeRobot:
+    icon: uptimekuma.png
+    href: https://uptimerobot.com/
+    widget:
+      type: uptimerobot
+      url: https://api.uptimerobot.com
+      key: ${UPTIMEROBOT_API_KEY}
+      headers:
+        User-Agent: homepage
+        X-Auth-Key: your-secret-here
+```
+
+If you define services via Docker labels or Kubernetes annotations, use the same key with dot-notation (for example `homepage.widget.headers.X-Auth-Key=secret` or `gethomepage.dev/widget.headers.X-Auth-Key: "secret"`).
+
 #### Field Visibility
 
 Each widget can optionally provide a list of which fields should be visible via the `fields` widget property. If no fields are specified, then all fields will be displayed. The `fields` property must be a valid YAML array of strings. As an example, here is the entry for Sonarr showing only a couple of fields.
@@ -116,6 +135,60 @@ Each widget can optionally provide a list of which fields should be visible via 
       fields: ["wanted", "queued"]
       url: http://sonarr.host.or.ip
       key: apikeyapikeyapikeyapikeyapikey
+```
+
+### Block Highlighting
+
+Widgets can tint their metric block text automatically based on rules defined alongside the service. Attach a `highlight` section to the widget configuration and map each block to one or more numeric or string rules using the field key (for example, `queued`, `lan_users`).
+
+```yaml
+- Sonarr:
+    icon: sonarr.png
+    href: http://sonarr.host.or.ip
+    widget:
+      type: sonarr
+      url: http://sonarr.host.or.ip
+      key: ${SONARR_API_KEY}
+      highlight:
+        queued:
+          numeric:
+            - level: danger
+              when: gte
+              value: 20
+            - level: warn
+              when: gte
+              value: 5
+            - level: good
+              when: eq
+              value: 0
+        status:
+          string:
+            - level: danger
+              when: regex
+              value: "(failed|import) pending"
+            - level: good
+              when: equals
+              value: "All good"
+        status_code:
+          string:
+            - level: warn
+              when: regex
+              value: "^5\\d{2}$"
+```
+
+Supported numeric operators for the `when` property are `gt`, `gte`, `lt`, `lte`, `eq`, `ne`, `between`, and `outside`. String rules support `equals`, `includes`, `startsWith`, `endsWith`, and `regex`. Each rule can be inverted with `negate: true`, and string rules may pass `caseSensitive: true` or custom regex `flags`. The highlight engine does its best to coerce formatted values, but you will get the most reliable results when you pass plain numbers or strings into `<Block>`.
+
+#### Value Only Highlighting
+
+You can optionally apply highlighting only to the value portion of a block (not the label) by setting `valueOnly: true` on the field configuration. This keeps the label visible while highlighting only the metric value itself.
+
+```yaml
+- Sonarr:
+    ...
+      highlight:
+        queued:
+          valueOnly: true
+          ...
 ```
 
 ## Descriptions

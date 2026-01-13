@@ -8,6 +8,10 @@ import widgets from "widgets/widgets";
 
 const logger = createLogger("credentialedProxyHandler");
 
+function basicAuthHeader(widget) {
+  return `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+}
+
 export default async function credentialedProxyHandler(req, res, map) {
   const { group, service, endpoint, index } = req.query;
 
@@ -23,6 +27,9 @@ export default async function credentialedProxyHandler(req, res, map) {
 
       const headers = {
         "Content-Type": "application/json",
+        ...(widgets[widget.type].headers ?? {}),
+        ...(widget.headers ?? {}),
+        ...(req.extraHeaders ?? {}),
       };
 
       if (widget.type === "stocks") {
@@ -49,6 +56,7 @@ export default async function credentialedProxyHandler(req, res, map) {
           "linkwarden",
           "mealie",
           "netalertx",
+          "pangolin",
           "tailscale",
           "tandoor",
           "pterodactyl",
@@ -61,7 +69,7 @@ export default async function credentialedProxyHandler(req, res, map) {
         if (widget.key) {
           headers.Authorization = `Bearer ${widget.key}`;
         } else {
-          headers.Authorization = `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+          headers.Authorization = basicAuthHeader(widget);
         }
       } else if (widget.type === "proxmox") {
         headers.Authorization = `PVEAPIToken=${widget.username}=${widget.password}`;
@@ -78,31 +86,31 @@ export default async function credentialedProxyHandler(req, res, map) {
         if (widget.key) {
           headers["NC-Token"] = `${widget.key}`;
         } else {
-          headers.Authorization = `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+          headers.Authorization = basicAuthHeader(widget);
         }
       } else if (widget.type === "paperlessngx") {
         if (widget.key) {
           headers.Authorization = `Token ${widget.key}`;
         } else {
-          headers.Authorization = `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+          headers.Authorization = basicAuthHeader(widget);
         }
       } else if (widget.type === "azuredevops") {
         headers.Authorization = `Basic ${Buffer.from(`$:${widget.key}`).toString("base64")}`;
       } else if (widget.type === "glances") {
-        headers.Authorization = `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+        headers.Authorization = basicAuthHeader(widget);
       } else if (widget.type === "plantit") {
         headers.Key = `${widget.key}`;
       } else if (widget.type === "myspeed") {
         headers.Password = `${widget.password}`;
       } else if (widget.type === "esphome") {
         if (widget.username && widget.password) {
-          headers.Authorization = `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+          headers.Authorization = basicAuthHeader(widget);
         } else if (widget.key) {
           headers.Cookie = `authenticated=${widget.key}`;
         }
       } else if (widget.type === "wgeasy") {
         if (widget.username && widget.password) {
-          headers.Authorization = `Basic ${Buffer.from(`${widget.username}:${widget.password}`).toString("base64")}`;
+          headers.Authorization = basicAuthHeader(widget);
         } else {
           headers.Authorization = widget.password;
         }

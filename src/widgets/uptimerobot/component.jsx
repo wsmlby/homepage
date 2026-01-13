@@ -31,6 +31,10 @@ export default function Component({ service }) {
     );
   }
 
+  if (uptimerobotData.error) {
+    return <Container service={service} error={uptimerobotData.error} />;
+  }
+
   // multiple monitors
   if (uptimerobotData.pagination?.total > 1) {
     const sitesUp = uptimerobotData.monitors.filter((m) => m.status === 2).length;
@@ -45,9 +49,12 @@ export default function Component({ service }) {
 
   // single monitor
   const monitor = uptimerobotData.monitors[0];
+  const logs = Array.isArray(monitor.logs) ? monitor.logs : [];
+  const lastUpLog = logs.find((log) => log.type === 2);
+  const lastDownLog = logs.find((log) => log.type === 1);
+
   let status;
   let uptime = 0;
-  let logIndex = 0;
 
   switch (monitor.status) {
     case 0:
@@ -58,8 +65,7 @@ export default function Component({ service }) {
       break;
     case 2:
       status = t("uptimerobot.up");
-      uptime = t("common.duration", { value: monitor.logs[0].duration });
-      logIndex = 1;
+      uptime = t("common.duration", { value: lastUpLog?.duration ?? 0 });
       break;
     case 8:
       status = t("uptimerobot.seemsdown");
@@ -72,9 +78,9 @@ export default function Component({ service }) {
       break;
   }
 
-  const lastDown = new Date(monitor.logs[logIndex].datetime * 1000).toLocaleString();
-  const downDuration = t("common.duration", { value: monitor.logs[logIndex].duration });
-  const hideDown = logIndex === 1 && monitor.logs[logIndex].type !== 1;
+  const lastDown = lastDownLog ? new Date(lastDownLog.datetime * 1000).toLocaleString() : "";
+  const downDuration = t("common.duration", { value: lastDownLog?.duration ?? 0 });
+  const hideDown = !lastDownLog;
 
   return (
     <Container service={service}>

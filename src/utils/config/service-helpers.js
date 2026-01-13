@@ -35,7 +35,7 @@ function parseServicesToGroups(services) {
         serviceGroupServices.push({
           name: entryName,
           ...entries[entryName],
-          weight: entries[entryName].weight || serviceGroupServices.length * 100, // default weight
+          weight: entries[entryName].weight ?? (serviceGroupServices.length + 1) * 100, // default weight
           type: "service",
         });
       }
@@ -107,11 +107,12 @@ export async function servicesFromDocker() {
                 constructedService = {
                   container: containerName.replace(/^\//, ""),
                   server: serverName,
+                  weight: 0,
                   type: "service",
                 };
               }
               let substitutedVal = substituteEnvironmentVars(containerLabels[label]);
-              if (value === "widget.version") {
+              if (value === "widget.version" || /^widgets\[\d+\]\.version$/.test(value)) {
                 substitutedVal = parseInt(substitutedVal, 10);
               }
               shvl.set(constructedService, value, substitutedVal);
@@ -254,6 +255,7 @@ export function cleanServiceGroups(groups) {
           // all widgets
           fields,
           hideErrors,
+          highlight,
           type,
 
           // azuredevops
@@ -278,12 +280,16 @@ export function cleanServiceGroups(groups) {
           slugs,
           symbols,
 
+          // crowdsec
+          limit24h,
+
           // customapi
           mappings,
           display,
 
           // deluge, qbittorrent
           enableLeechProgress,
+          enableLeechSize,
 
           // diskstation
           volume,
@@ -308,7 +314,7 @@ export function cleanServiceGroups(groups) {
           // gamedig
           gameToken,
 
-          // beszel, glances, immich, komga, mealie, pihole, pfsense, speedtest
+          // authentik, beszel, glances, immich, komga, mealie, pihole, pfsense, speedtest
           version,
 
           // glances
@@ -402,17 +408,29 @@ export function cleanServiceGroups(groups) {
           // unifi
           site,
 
+          // unraid
+          pool1,
+          pool2,
+          pool3,
+          pool4,
+
           // vikunja
           enableTaskList,
 
           // wgeasy
           threshold,
 
+          // yourspotify
+          interval,
+
           // technitium
           range,
 
           // spoolman
           spoolIds,
+
+          // grafana
+          alerts,
         } = widgetData;
 
         let fieldsList = fields;
@@ -434,6 +452,21 @@ export function cleanServiceGroups(groups) {
           index,
         };
 
+        if (highlight) {
+          let parsedHighlight = highlight;
+          if (typeof highlight === "string") {
+            try {
+              parsedHighlight = JSON.parse(highlight);
+            } catch (e) {
+              logger.error("Invalid highlight configuration detected in config for service '%s'", service.name);
+              parsedHighlight = null;
+            }
+          }
+          if (parsedHighlight && typeof parsedHighlight === "object") {
+            widget.highlight = parsedHighlight;
+          }
+        }
+
         if (type === "azuredevops") {
           if (userEmail) widget.userEmail = userEmail;
           if (repositoryId) widget.repositoryId = repositoryId;
@@ -448,6 +481,10 @@ export function cleanServiceGroups(groups) {
           if (symbols) widget.symbols = symbols;
           if (slugs) widget.slugs = slugs;
           if (defaultinterval) widget.defaultinterval = defaultinterval;
+        }
+
+        if (limit24h !== undefined) {
+          widget.limit24h = !!limit24h;
         }
 
         if (type === "docker") {
@@ -487,6 +524,7 @@ export function cleanServiceGroups(groups) {
         }
         if (["deluge", "qbittorrent"].includes(type)) {
           if (enableLeechProgress !== undefined) widget.enableLeechProgress = JSON.parse(enableLeechProgress);
+          if (enableLeechSize !== undefined) widget.enableLeechSize = JSON.parse(enableLeechSize);
         }
         if (["opnsense", "pfsense"].includes(type)) {
           if (wan) widget.wan = wan;
@@ -520,7 +558,20 @@ export function cleanServiceGroups(groups) {
           if (snapshotPath) widget.snapshotPath = snapshotPath;
         }
         if (
-          ["beszel", "glances", "immich", "komga", "mealie", "pfsense", "pihole", "speedtest", "wgeasy"].includes(type)
+          [
+            "authentik",
+            "beszel",
+            "glances",
+            "immich",
+            "komga",
+            "mealie",
+            "pfsense",
+            "pihole",
+            "speedtest",
+            "wgeasy",
+            "grafana",
+            "gluetun",
+          ].includes(type)
         ) {
           if (version) widget.version = parseInt(version, 10);
         }
@@ -604,6 +655,20 @@ export function cleanServiceGroups(groups) {
         }
         if (type === "jellystat") {
           if (days !== undefined) widget.days = parseInt(days, 10);
+        }
+        if (type === "grafana") {
+          if (alerts) widget.alerts = alerts;
+        }
+        if (type === "unraid") {
+          if (pool1) widget.pool1 = pool1;
+          if (pool2) widget.pool2 = pool2;
+          if (pool3) widget.pool3 = pool3;
+          if (pool4) widget.pool4 = pool4;
+        }
+        if (type === "yourspotify") {
+          if (interval !== undefined) {
+            widget.interval = interval;
+          }
         }
         return widget;
       });

@@ -29,7 +29,7 @@ function ticksToString(ticks) {
 
 function generateStreamTitle(session, enableUser, showEpisodeNumber) {
   const {
-    NowPlayingItem: { Name, SeriesName, Type, ParentIndexNumber, IndexNumber },
+    NowPlayingItem: { Name, SeriesName, Type, ParentIndexNumber, IndexNumber, AlbumArtist, Album },
     UserName,
   } = session;
   let streamTitle = "";
@@ -38,6 +38,8 @@ function generateStreamTitle(session, enableUser, showEpisodeNumber) {
     const seasonStr = ParentIndexNumber ? `S${ParentIndexNumber.toString().padStart(2, "0")}` : "";
     const episodeStr = IndexNumber ? `E${IndexNumber.toString().padStart(2, "0")}` : "";
     streamTitle = `${SeriesName}: ${seasonStr} · ${episodeStr} - ${Name}`;
+  } else if (Type === "Audio") {
+    streamTitle = `${AlbumArtist} - ${Album} - ${Name}`;
   } else {
     streamTitle = `${Name}${SeriesName ? ` - ${SeriesName}` : ""}`;
   }
@@ -203,13 +205,14 @@ export default function Component({ service }) {
   const { t } = useTranslation();
 
   const { widget } = service;
+  const enableNowPlaying = service.widget?.enableNowPlaying ?? true;
 
   const {
     data: sessionsData,
     error: sessionsError,
     mutate: sessionMutate,
-  } = useWidgetAPI(widget, "Sessions", {
-    refreshInterval: 5000,
+  } = useWidgetAPI(widget, enableNowPlaying ? "Sessions" : "", {
+    refreshInterval: enableNowPlaying ? 5000 : undefined,
   });
 
   const { data: countData, error: countError } = useWidgetAPI(widget, "Count", {
@@ -237,13 +240,12 @@ export default function Component({ service }) {
   }
 
   const enableBlocks = service.widget?.enableBlocks;
-  const enableNowPlaying = service.widget?.enableNowPlaying ?? true;
   const enableMediaControl = service.widget?.enableMediaControl !== false; // default is true
   const enableUser = !!service.widget?.enableUser; // default is false
   const expandOneStreamToTwoRows = service.widget?.expandOneStreamToTwoRows !== false; // default is true
   const showEpisodeNumber = !!service.widget?.showEpisodeNumber; // default is false
 
-  if (!sessionsData || !countData) {
+  if ((enableNowPlaying && !sessionsData) || !countData) {
     return (
       <>
         {enableBlocks && <CountBlocks service={service} countData={null} />}
